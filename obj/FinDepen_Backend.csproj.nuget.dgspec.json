@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\UOM-new\\FinDepen_Backend\\FinDepen_Backend.csproj": {}
+    "D:\\UOM-new\\Findepen\\FinDepen_Backend\\FinDepen_Backend.csproj": {}
   },
   "projects": {
-    "D:\\UOM-new\\FinDepen_Backend\\FinDepen_Backend.csproj": {
+    "D:\\UOM-new\\Findepen\\FinDepen_Backend\\FinDepen_Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\UOM-new\\FinDepen_Backend\\FinDepen_Backend.csproj",
+        "projectUniqueName": "D:\\UOM-new\\Findepen\\FinDepen_Backend\\FinDepen_Backend.csproj",
         "projectName": "FinDepen_Backend",
-        "projectPath": "D:\\UOM-new\\FinDepen_Backend\\FinDepen_Backend.csproj",
+        "projectPath": "D:\\UOM-new\\Findepen\\FinDepen_Backend\\FinDepen_Backend.csproj",
         "packagesPath": "C:\\Users\\Navod\\.nuget\\packages\\",
-        "outputPath": "D:\\UOM-new\\FinDepen_Backend\\obj\\",
+        "outputPath": "D:\\UOM-new\\Findepen\\FinDepen_Backend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
