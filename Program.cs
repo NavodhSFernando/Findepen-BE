@@ -78,6 +78,10 @@ builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, PasswordHasher<Appl
 builder.Services.AddHttpClient();
 builder.Services.AddTransient<IEmailService, EmailService>();
 
+// Register the background service for budget auto-renewal
+builder.Services.AddHostedService<BudgetAutoRenewalService>();
+builder.Services.AddScoped<IBudgetAutoRenewalService, BudgetAutoRenewalService>();
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers()

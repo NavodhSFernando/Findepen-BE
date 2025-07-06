@@ -209,6 +209,48 @@ namespace FinDepen_Backend.Controllers
             }
         }
 
+        [HttpPut("{id}/auto-renewal")]
+        public async Task<IActionResult> ToggleAutoRenewal(Guid id, [FromBody] ToggleAutoRenewalModel model)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == null)
+                {
+                    return Unauthorized("User not authenticated");
+                }
+
+                var budget = await _budgetService.GetBudgetById(id);
+                
+                // Ensure the budget belongs to the current user
+                if (budget.UserId != userId)
+                {
+                    return Forbid("You can only modify your own budgets");
+                }
+
+                budget.AutoRenewalEnabled = model.AutoRenewalEnabled;
+                
+                var updatedBudget = await _budgetService.UpdateBudget(id, budget);
+                
+                _logger.LogInformation("Auto-renewal toggled for budget {BudgetId} to {AutoRenewalEnabled} by user {UserId}", 
+                    id, model.AutoRenewalEnabled, userId);
+                
+                return Ok(new { 
+                    Message = $"Auto-renewal {(model.AutoRenewalEnabled ? "enabled" : "disabled")} successfully",
+                    Budget = updatedBudget 
+                });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound($"Budget with ID {id} not found");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling auto-renewal for budget with ID: {BudgetId}", id);
+                return StatusCode(500, "An error occurred while toggling auto-renewal");
+            }
+        }
+
         private string? GetCurrentUserId()
         {
             return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

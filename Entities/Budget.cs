@@ -21,6 +21,12 @@ namespace FinDepen_Backend.Entities
         [Required]
         public RenewalFrequency RenewalFrequency { get; set; } = RenewalFrequency.Monthly; // Monthly, Weekly, Yearly
 
+        // Auto-renewal fields
+        public bool AutoRenewalEnabled { get; set; } = false;
+        public DateTime? LastRenewalDate { get; set; }
+        public int RenewalCount { get; set; } = 0;
+        public DateTime? EndDate { get; set; }
+
         [ForeignKey("UserId")]
         [JsonIgnore]
         public string UserId { get; set; }

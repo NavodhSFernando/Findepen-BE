@@ -132,4 +132,10 @@ namespace FinDepen_Backend.DTOs
         public int WarningBudgets { get; set; }
         public int ExceededBudgets { get; set; }
     }
+
+    public class ToggleAutoRenewalModel
+    {
+        [Required(ErrorMessage = "Auto-renewal status is required")]
+        public bool AutoRenewalEnabled { get; set; }
+    }
 } 

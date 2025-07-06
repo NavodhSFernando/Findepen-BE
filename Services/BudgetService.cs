@@ -81,6 +81,13 @@ namespace FinDepen_Backend.Services
                 budget.Id = Guid.NewGuid();
                 budget.SpentAmount = 0; // Initialize spent amount to 0 for new budgets
                 
+                // Calculate EndDate based on StartDate and RenewalFrequency
+                budget.EndDate = CalculateEndDate(budget.StartDate, budget.RenewalFrequency);
+                
+                // Initialize auto-renewal fields
+                budget.RenewalCount = 0;
+                budget.LastRenewalDate = null;
+                
                 _context.Budgets.Add(budget);
                 await _context.SaveChangesAsync();
                 
@@ -185,6 +192,25 @@ namespace FinDepen_Backend.Services
             existingBudget.Reminder = updatedBudget.Reminder;
             existingBudget.StartDate = updatedBudget.StartDate;
             existingBudget.RenewalFrequency = updatedBudget.RenewalFrequency;
+            existingBudget.AutoRenewalEnabled = updatedBudget.AutoRenewalEnabled;
+            
+            // Recalculate EndDate if StartDate or RenewalFrequency changed
+            if (existingBudget.StartDate != updatedBudget.StartDate || 
+                existingBudget.RenewalFrequency != updatedBudget.RenewalFrequency)
+            {
+                existingBudget.EndDate = CalculateEndDate(updatedBudget.StartDate, updatedBudget.RenewalFrequency);
+            }
+        }
+
+        private DateTime CalculateEndDate(DateTime startDate, Constants.RenewalFrequency frequency)
+        {
+            return frequency switch
+            {
+                Constants.RenewalFrequency.Weekly => startDate.AddDays(7),
+                Constants.RenewalFrequency.Monthly => startDate.AddMonths(1),
+                Constants.RenewalFrequency.Yearly => startDate.AddYears(1),
+                _ => startDate.AddMonths(1) // Default to monthly
+            };
         }
     }
 }
