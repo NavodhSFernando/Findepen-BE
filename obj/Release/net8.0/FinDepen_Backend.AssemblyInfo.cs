@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FinDepen_Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cf2aba1ef82b3e984d08e5494be804d2ab6b0fa8")]
 [assembly: System.Reflection.AssemblyProductAttribute("FinDepen_Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FinDepen_Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,7 +1,11 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\Controllers",
+    "\\DTOs",
+    "\\Entities",
+    "\\Profiles"
   ],
-  "SelectedNode": "\\FinDepen_Backend.sln",
+  "SelectedNode": "\\Profiles\\MappingProfile.cs",
   "PreviewInSolutionExplorer": false
 }

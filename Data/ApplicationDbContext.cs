@@ -23,10 +23,15 @@ namespace FinDepen_Backend.Data
                 .WithMany(u => u.Transactions)
                 .HasForeignKey(t => t.UserId);
 
-            builder.Entity<Budget>()
-                .HasOne(b => b.User)
+            builder.Entity<Budget>(entity =>
+            {
+                entity.HasOne(b => b.User)
                 .WithMany(u => u.Budgets)
                 .HasForeignKey(b => b.UserId);
+                
+                entity.Property(b => b.RenewalFrequency)
+                    .HasConversion<string>();
+            });
 
             builder.Entity<Goal>()
                 .HasOne(g => g.User)
