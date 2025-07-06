@@ -72,6 +72,7 @@ builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("Email
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
+builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<UserController>();
 builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, PasswordHasher<ApplicationUser>>();
 

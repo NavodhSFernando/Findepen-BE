@@ -33,10 +33,18 @@ namespace FinDepen_Backend.Data
                     .HasConversion<string>();
             });
 
-            builder.Entity<Goal>()
-                .HasOne(g => g.User)
+            builder.Entity<Goal>(entity =>
+            {
+                entity.HasOne(g => g.User)
                 .WithMany(u => u.Goals)
                 .HasForeignKey(g => g.UserId);
+                
+                entity.Property(g => g.Priority)
+                    .HasConversion<string>();
+                    
+                entity.Property(g => g.Status)
+                    .HasConversion<string>();
+            });
 
             builder.Entity<RecurringTransaction>().ToTable("RecurringTransactions");
         }

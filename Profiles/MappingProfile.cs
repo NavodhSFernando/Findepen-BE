@@ -53,6 +53,54 @@ public class MappingProfile : Profile
 
         // ✅ Budget Entity to UpdateBudgetModel (for potential reverse mapping)
         CreateMap<Budget, UpdateBudgetModel>();
+
+        // ✅ Goal Entity to GoalModel DTO
+        CreateMap<Goal, GoalModel>()
+            .ForMember(dest => dest.ProgressPercentage, opt => opt.MapFrom(src => 
+                src.TargetAmount > 0 ? Math.Min((src.CurrentAmount / src.TargetAmount) * 100, 100) : 0))
+            .ForMember(dest => dest.RemainingAmount, opt => opt.MapFrom(src => 
+                Math.Max(src.TargetAmount - src.CurrentAmount, 0)))
+            .ForMember(dest => dest.DaysRemaining, opt => opt.MapFrom(src => 
+                Math.Max((src.TargetDate - DateTime.UtcNow).Days, 0)))
+            .ForMember(dest => dest.IsOverdue, opt => opt.MapFrom(src => 
+                DateTime.UtcNow > src.TargetDate && src.CurrentAmount < src.TargetAmount))
+            .ForMember(dest => dest.IsCompleted, opt => opt.MapFrom(src => 
+                src.CurrentAmount >= src.TargetAmount))
+            .ForMember(dest => dest.ProgressStatus, opt => opt.MapFrom(src => 
+                src.CurrentAmount >= src.TargetAmount ? "Completed" :
+                DateTime.UtcNow > src.TargetDate && src.CurrentAmount < src.TargetAmount ? "Overdue" :
+                (src.CurrentAmount / src.TargetAmount) * 100 >= 80 ? "Near Completion" :
+                (src.CurrentAmount / src.TargetAmount) * 100 >= 50 ? "Good Progress" :
+                (src.CurrentAmount / src.TargetAmount) * 100 >= 25 ? "In Progress" : "Just Started"));
+
+        // ✅ GoalModel DTO to Goal Entity
+        CreateMap<GoalModel, Goal>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore()) // Don't map ID from DTO to entity
+            .ForMember(dest => dest.User, opt => opt.Ignore()); // Don't map navigation property
+
+        // ✅ CreateGoalModel to Goal Entity
+        CreateMap<CreateGoalModel, Goal>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.CurrentAmount, opt => opt.MapFrom(src => 0.0)) // Initialize to 0
+            .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.LastUpdatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => FinDepen_Backend.Constants.GoalStatus.Active))
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
+            .ForMember(dest => dest.UserId, opt => opt.Ignore()) // Will be set by controller
+            .ForMember(dest => dest.User, opt => opt.Ignore()); // Don't map navigation property
+
+        // ✅ UpdateGoalModel to Goal Entity
+        CreateMap<UpdateGoalModel, Goal>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore()) // Don't map ID
+            .ForMember(dest => dest.LastUpdatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.UserId, opt => opt.Ignore()) // Will be set by controller
+            .ForMember(dest => dest.User, opt => opt.Ignore()); // Don't map navigation property
+
+        // ✅ Goal Entity to CreateGoalModel (for potential reverse mapping)
+        CreateMap<Goal, CreateGoalModel>();
+
+        // ✅ Goal Entity to UpdateGoalModel (for potential reverse mapping)
+        CreateMap<Goal, UpdateGoalModel>();
     }
 }
 
