@@ -12,9 +12,10 @@ namespace FinDepen_Backend.Validation
 
         protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
+            // Allow null values (for Income transactions)
             if (value == null)
             {
-                return new ValidationResult("Category is required.");
+                return ValidationResult.Success;
             }
 
             string category = value.ToString()!;

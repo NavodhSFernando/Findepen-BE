@@ -8,12 +8,22 @@ namespace FinDepen_Backend.Entities
     {
         [Key]
         public Guid Id { get; set; }
+
+        [Required]
         public string Title { get; set; }
         public string? Description { get; set; }
+
+        [Required]
         public double Amount { get; set; }
+
+        [Required]
         public string Category { get; set; }
+
+        [Required]
         public string Type { get; set; }
-        public DateTime Date { get; set; }
+
+        [Required]
+        public DateTime Date { get; set; } = DateTime.UtcNow;
 
         [ForeignKey("UserId")]
         [JsonIgnore]
@@ -21,5 +31,11 @@ namespace FinDepen_Backend.Entities
 
         [JsonIgnore]
         public ApplicationUser User { get; set; }
+
+        // Navigation property for related budget (if this transaction affects a budget)
+        public Guid? BudgetId { get; set; }
+        
+        [JsonIgnore]
+        public Budget? Budget { get; set; }
     }
 }

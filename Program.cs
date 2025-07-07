@@ -71,6 +71,7 @@ builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("Email
 // Injection List
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<UserController>();

@@ -33,5 +33,9 @@ namespace FinDepen_Backend.Entities
 
         [JsonIgnore]
         public ApplicationUser User { get; set; }
+
+        // Navigation property for related transactions
+        [JsonIgnore]
+        public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
     }
 }

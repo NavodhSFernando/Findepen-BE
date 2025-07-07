@@ -16,6 +16,32 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.SecurityStamp, opt => opt.Ignore())
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // UserManager will handle password hashing
 
+        // ✅ Transaction Entity to TransactionModel DTO
+        CreateMap<Transaction, TransactionModel>()
+            .ForMember(dest => dest.FormattedAmount, opt => opt.MapFrom(src => Math.Round(src.Amount, 2)))
+            .ForMember(dest => dest.FormattedDate, opt => opt.MapFrom(src => src.Date.ToString("MMM dd, yyyy")))
+            .ForMember(dest => dest.BalanceImpact, opt => opt.MapFrom(src => src.Type == "Income" ? "+" : "-"))
+            .ForMember(dest => dest.FormattedAmountWithSign, opt => opt.MapFrom(src => 
+                (src.Type == "Income" ? "+" : "-") + Math.Round(src.Amount, 2).ToString("C")))
+            .ForMember(dest => dest.IsIncome, opt => opt.MapFrom(src => src.Type == "Income"))
+            .ForMember(dest => dest.IsExpense, opt => opt.MapFrom(src => src.Type == "Expense"));
+
+        // ✅ CreateTransactionModel to Transaction Entity
+        CreateMap<CreateTransactionModel, Transaction>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.UserId, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.User, opt => opt.Ignore()) // Don't map navigation property
+            .ForMember(dest => dest.BudgetId, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.Budget, opt => opt.Ignore()); // Don't map navigation property
+
+        // ✅ UpdateTransactionModel to Transaction Entity
+        CreateMap<UpdateTransactionModel, Transaction>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore()) // Don't map ID
+            .ForMember(dest => dest.UserId, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.User, opt => opt.Ignore()) // Don't map navigation property
+            .ForMember(dest => dest.BudgetId, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.Budget, opt => opt.Ignore()); // Don't map navigation property
+
         // ✅ Budget Entity to BudgetModel DTO
         CreateMap<Budget, BudgetModel>()
             .ForMember(dest => dest.RemainingAmount, opt => opt.MapFrom(src => src.PlannedAmount - src.SpentAmount))
