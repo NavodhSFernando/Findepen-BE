@@ -292,12 +292,14 @@ namespace FinDepen_Backend.Services
                 // Check if goal has sufficient funds
                 if (goal.CurrentAmount < amount)
                 {
+                    _logger.LogWarning("Insufficient funds in goal {GoalId}. Current: {CurrentAmount}, Requested: {Amount}", goalId, goal.CurrentAmount, amount);
                     throw new InvalidOperationException("Insufficient funds in goal to convert to expense.");
                 }
                 
                 // Validate category
                 if (!Categories.IsValidCategory(category))
                 {
+                    _logger.LogWarning("Invalid category '{Category}' for goal {GoalId}", category, goalId);
                     throw new ArgumentException($"Category must be one of: {Categories.GetValidCategoriesString()}");
                 }
                 
@@ -314,17 +316,26 @@ namespace FinDepen_Backend.Services
                     UserId = userId
                 };
                 
-                // Update goal
-                goal.CurrentAmount -= amount;
+                _logger.LogInformation("Created transaction with ID: {TransactionId}, Amount: {Amount}, Title: {Title}", transaction.Id, transaction.Amount, transaction.Title);
+                
+                // Update goal - preserve the collected amount, only mark as completed
                 goal.LastUpdatedDate = DateTime.UtcNow;
                 goal.IsActive = false;
                 goal.Status = GoalStatus.Completed;
                 
-                // Add transaction to context
+                // Note: User balance is NOT affected when converting goal to expense
+                // because the money was already "spent" when it was added to the goal
+                // The goal funds are being used for the expense, not the user's current balance
+                
+                _logger.LogInformation("Updated goal {GoalId} - Status: {Status}, IsActive: {IsActive}, CurrentAmount preserved: {CurrentAmount}", 
+                    goalId, goal.Status, goal.IsActive, goal.CurrentAmount);
+                _logger.LogInformation("User balance unchanged - Goal funds used for expense");
+                
+                // Add transaction to context and save changes
                 _context.Transactions.Add(transaction);
                 await _context.SaveChangesAsync();
                 
-                _logger.LogInformation("Successfully converted {Amount} funds from goal {GoalId} to expense", amount, goalId);
+                _logger.LogInformation("Successfully converted {Amount} funds from goal {GoalId} to expense. Transaction ID: {TransactionId}", amount, goalId, transaction.Id);
                 return goal;
             }
             catch (KeyNotFoundException)
@@ -359,7 +370,10 @@ namespace FinDepen_Backend.Services
                 var goals = await GetGoals(userId);
                 var goalList = goals.ToList();
                 
-                var activeGoalsCount = goalList.Count(g => g.IsActive && g.Status == GoalStatus.Active);
+                // Filter active goals for summary calculations
+                var activeGoals = goalList.Where(g => g.IsActive && g.Status == GoalStatus.Active).ToList();
+                var activeGoalsCount = activeGoals.Count;
+                
                 _logger.LogInformation("Goal summary calculation - Total: {Total}, Active: {Active}, Goals with IsActive=true: {IsActiveCount}, Goals with Status=Active: {StatusActiveCount}", 
                     goalList.Count, activeGoalsCount, 
                     goalList.Count(g => g.IsActive), 
@@ -376,18 +390,19 @@ namespace FinDepen_Backend.Services
                     TotalGoals = goalList.Count,
                     ActiveGoals = activeGoalsCount,
                     CompletedGoals = goalList.Count(g => g.Status == GoalStatus.Completed || g.CurrentAmount >= g.TargetAmount),
-                    OverdueGoals = goalList.Count(g => DateTime.UtcNow > g.TargetDate && g.CurrentAmount < g.TargetAmount),
-                    TotalTargetAmount = goalList.Sum(g => g.TargetAmount),
-                    TotalCurrentAmount = goalList.Sum(g => g.CurrentAmount),
-                    TotalRemainingAmount = goalList.Sum(g => Math.Max(g.TargetAmount - g.CurrentAmount, 0)),
-                    OverallProgressPercentage = goalList.Any() ? 
-                        (goalList.Sum(g => g.CurrentAmount) / goalList.Sum(g => g.TargetAmount)) * 100 : 0,
-                    TotalMonthlyRequired = goalList.Sum(g => 
+                    OverdueGoals = activeGoals.Count(g => DateTime.UtcNow > g.TargetDate && g.CurrentAmount < g.TargetAmount),
+                    // Calculate summary values only from active goals
+                    TotalTargetAmount = activeGoals.Sum(g => g.TargetAmount),
+                    TotalCurrentAmount = activeGoals.Sum(g => g.CurrentAmount),
+                    TotalRemainingAmount = activeGoals.Sum(g => Math.Max(g.TargetAmount - g.CurrentAmount, 0)),
+                    OverallProgressPercentage = activeGoals.Any() ? 
+                        (activeGoals.Sum(g => g.CurrentAmount) / activeGoals.Sum(g => g.TargetAmount)) * 100 : 0,
+                    TotalMonthlyRequired = activeGoals.Sum(g => 
                     {
                         var monthsRemaining = Math.Max((g.TargetDate - DateTime.UtcNow).Days / 30.0, 1);
                         return Math.Max((g.TargetAmount - g.CurrentAmount) / monthsRemaining, 0);
                     }),
-                    TotalWeeklyRequired = goalList.Sum(g => 
+                    TotalWeeklyRequired = activeGoals.Sum(g => 
                     {
                         var weeksRemaining = Math.Max((g.TargetDate - DateTime.UtcNow).Days / 7.0, 1);
                         return Math.Max((g.TargetAmount - g.CurrentAmount) / weeksRemaining, 0);
