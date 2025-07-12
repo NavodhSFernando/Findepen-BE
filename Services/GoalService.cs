@@ -317,6 +317,8 @@ namespace FinDepen_Backend.Services
                 // Update goal
                 goal.CurrentAmount -= amount;
                 goal.LastUpdatedDate = DateTime.UtcNow;
+                goal.IsActive = false;
+                goal.Status = GoalStatus.Completed;
                 
                 // Add transaction to context
                 _context.Transactions.Add(transaction);
