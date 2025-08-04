@@ -10,6 +10,7 @@ namespace FinDepen_Backend.Entities
         public double? BalanceAmount { get; set; } = 0.0;
         public string? PasswordResetOtp { get; set; }
         public DateTime? PasswordResetOtpExpiry { get; set; }
+        public string Theme { get; set; } = "light";
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
         public ICollection<Budget> Budgets { get; set; } = new List<Budget>();
         public ICollection<Goal> Goals { get; set; } = new List<Goal>();

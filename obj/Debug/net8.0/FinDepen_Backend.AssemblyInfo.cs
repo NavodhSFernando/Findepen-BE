@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FinDepen_Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2b7b62bcc63b0363e478ecf16a1b7eb2017deded")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5317953526778dda21261f5e8909a656aede7e1f")]
 [assembly: System.Reflection.AssemblyProductAttribute("FinDepen_Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FinDepen_Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
