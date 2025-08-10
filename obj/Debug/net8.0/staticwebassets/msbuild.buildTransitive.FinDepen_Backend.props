@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\FinDepen_Backend.props" />
-</Project>
