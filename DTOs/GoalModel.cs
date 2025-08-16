@@ -155,16 +155,6 @@ namespace FinDepen_Backend.DTOs
         public string? Note { get; set; }
     }
 
-    public class WithdrawFundsFromGoalModel
-    {
-        [Required(ErrorMessage = "Amount is required")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]
-        public double Amount { get; set; }
-
-        [StringLength(200, ErrorMessage = "Note cannot exceed 200 characters")]
-        public string? Note { get; set; }
-    }
-
     public class ConvertGoalToExpenseModel
     {
         [Required(ErrorMessage = "Amount is required")]
@@ -180,6 +170,9 @@ namespace FinDepen_Backend.DTOs
 
         [Required(ErrorMessage = "Category is required")]
         public string Category { get; set; }
+
+        [Required(ErrorMessage = "Goal completion status is required")]
+        public bool MarkGoalAsCompleted { get; set; }
 
         [StringLength(200, ErrorMessage = "Note cannot exceed 200 characters")]
         public string? Note { get; set; }

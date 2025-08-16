@@ -11,8 +11,7 @@ namespace FinDepen_Backend.Repositories
         Task<Goal> UpdateGoal(Guid id, Goal updatedGoal);
         Task<Goal> DeleteGoal(Guid id);
         Task<Goal> AddFundsToGoal(Guid goalId, double amount, string userId);
-        Task<Goal> WithdrawFundsFromGoal(Guid goalId, double amount, string userId);
-        Task<Goal> ConvertGoalToExpense(Guid goalId, double amount, string transactionTitle, string? transactionDescription, string category, string userId);
+        Task<Goal> ConvertGoalToExpense(Guid goalId, double amount, string transactionTitle, string? transactionDescription, string category, bool markGoalAsCompleted, string userId);
         Task<GoalSummaryModel> GetGoalSummary(string userId);
     }
 } 

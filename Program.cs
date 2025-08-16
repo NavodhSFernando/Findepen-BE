@@ -147,6 +147,22 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Apply database migrations automatically
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    try
+    {
+        context.Database.Migrate();
+        Console.WriteLine("Database migrations applied successfully");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error applying migrations: {ex.Message}");
+        throw;
+    }
+}
+
 // Use CORS policy
 app.UseCors("AllowSpecificOrigin");
 

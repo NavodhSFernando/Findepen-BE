@@ -25,15 +25,15 @@ namespace FinDepen_Backend.Services
         {
             try
             {
-                _logger.LogInformation("Retrieving goals for user: {UserId}", userId);
+                _logger.LogInformation("Retrieving active goals for user: {UserId}", userId);
                 
                 var goals = await _context.Goals
-                    .Where(g => g.UserId == userId)
+                    .Where(g => g.UserId == userId && g.IsActive)
                     .OrderBy(g => g.Priority)
                     .ThenBy(g => g.TargetDate)
                     .ToListAsync();
                 
-                _logger.LogInformation("Successfully retrieved {Count} goals for user: {UserId}", goals.Count(), userId);
+                _logger.LogInformation("Successfully retrieved {Count} active goals for user: {UserId}", goals.Count(), userId);
                 return goals;
             }
             catch (Exception ex)
@@ -219,66 +219,12 @@ namespace FinDepen_Backend.Services
             }
         }
 
-        public async Task<Goal> WithdrawFundsFromGoal(Guid goalId, double amount, string userId)
+        public async Task<Goal> ConvertGoalToExpense(Guid goalId, double amount, string transactionTitle, string? transactionDescription, string category, bool markGoalAsCompleted, string userId)
         {
             try
             {
-                _logger.LogInformation("Withdrawing {Amount} funds from goal {GoalId} for user {UserId}", amount, goalId, userId);
-                
-                var goal = await GetGoalById(goalId);
-                
-                // Verify the goal belongs to the user
-                if (goal.UserId != userId)
-                {
-                    _logger.LogWarning("User {UserId} attempted to access goal {GoalId} belonging to user {GoalUserId}", userId, goalId, goal.UserId);
-                    throw new UnauthorizedAccessException("You can only modify your own goals.");
-                }
-                
-                // Check if goal has sufficient funds
-                if (goal.CurrentAmount < amount)
-                {
-                    throw new InvalidOperationException("Insufficient funds in goal to withdraw.");
-                }
-                
-                // Update goal and user balance
-                goal.CurrentAmount -= amount;
-                goal.LastUpdatedDate = DateTime.UtcNow;
-                
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                if (user != null)
-                {
-                    user.BalanceAmount += amount;
-                }
-                
-                await _context.SaveChangesAsync();
-                
-                _logger.LogInformation("Successfully withdrew {Amount} funds from goal {GoalId}", amount, goalId);
-                return goal;
-            }
-            catch (KeyNotFoundException)
-            {
-                throw;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw;
-            }
-            catch (InvalidOperationException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while withdrawing funds from goal {GoalId}", goalId);
-                throw new Exception("An error occurred while withdrawing funds from the goal.", ex);
-            }
-        }
-
-        public async Task<Goal> ConvertGoalToExpense(Guid goalId, double amount, string transactionTitle, string? transactionDescription, string category, string userId)
-        {
-            try
-            {
-                _logger.LogInformation("Converting {Amount} funds from goal {GoalId} to expense for user {UserId}", amount, goalId, userId);
+                _logger.LogInformation("Converting {Amount} funds from goal {GoalId} to expense for user {UserId}. Mark as completed: {MarkAsCompleted}", 
+                    amount, goalId, userId, markGoalAsCompleted);
                 
                 var goal = await GetGoalById(goalId);
                 
@@ -303,12 +249,22 @@ namespace FinDepen_Backend.Services
                     throw new ArgumentException($"Category must be one of: {Categories.GetValidCategoriesString()}");
                 }
                 
+                // Get user to update balance if needed
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                {
+                    throw new KeyNotFoundException("User not found.");
+                }
+                
+                // Calculate remaining amount after conversion
+                double remainingAmount = goal.CurrentAmount - amount;
+                
                 // Create transaction
                 var transaction = new Transaction
                 {
                     Id = Guid.NewGuid(),
                     Title = transactionTitle,
-                    Description = transactionDescription,
+                    Description = transactionDescription ?? $"Converted from goal: {goal.Title}",
                     Amount = amount,
                     Category = category,
                     Type = "Expense",
@@ -316,26 +272,46 @@ namespace FinDepen_Backend.Services
                     UserId = userId
                 };
                 
-                _logger.LogInformation("Created transaction with ID: {TransactionId}, Amount: {Amount}, Title: {Title}", transaction.Id, transaction.Amount, transaction.Title);
+                _logger.LogInformation("Created transaction with ID: {TransactionId}, Amount: {Amount}, Title: {Title}", 
+                    transaction.Id, transaction.Amount, transaction.Title);
                 
-                // Update goal - preserve the collected amount, only mark as completed
+                // Update goal based on user's completion choice
                 goal.LastUpdatedDate = DateTime.UtcNow;
-                goal.IsActive = false;
-                goal.Status = GoalStatus.Completed;
                 
-                // Note: User balance is NOT affected when converting goal to expense
-                // because the money was already "spent" when it was added to the goal
-                // The goal funds are being used for the expense, not the user's current balance
-                
-                _logger.LogInformation("Updated goal {GoalId} - Status: {Status}, IsActive: {IsActive}, CurrentAmount preserved: {CurrentAmount}", 
-                    goalId, goal.Status, goal.IsActive, goal.CurrentAmount);
-                _logger.LogInformation("User balance unchanged - Goal funds used for expense");
+                if (markGoalAsCompleted)
+                {
+                    // Goal is completed - return remaining funds to user balance
+                    goal.CurrentAmount = 0; // All funds are either converted or returned
+                    goal.Status = GoalStatus.Completed;
+                    goal.IsActive = false;
+                    
+                    // Return remaining funds to user balance
+                    if (remainingAmount > 0)
+                    {
+                        user.BalanceAmount += remainingAmount;
+                        _logger.LogInformation("Goal {GoalId} completed. Returned {RemainingAmount} to user balance. New balance: {NewBalance}", 
+                            goalId, remainingAmount, user.BalanceAmount);
+                    }
+                    
+                    _logger.LogInformation("Goal {GoalId} marked as completed by user", goalId);
+                }
+                else
+                {
+                    // Goal remains active - keep remaining funds in the goal
+                    goal.CurrentAmount = remainingAmount; // Keep remaining funds in goal
+                    goal.Status = GoalStatus.Active;
+                    goal.IsActive = true;
+                    
+                    _logger.LogInformation("Goal {GoalId} remains active after partial conversion. Remaining amount {RemainingAmount} kept in goal", 
+                        goalId, remainingAmount);
+                }
                 
                 // Add transaction to context and save changes
                 _context.Transactions.Add(transaction);
                 await _context.SaveChangesAsync();
                 
-                _logger.LogInformation("Successfully converted {Amount} funds from goal {GoalId} to expense. Transaction ID: {TransactionId}", amount, goalId, transaction.Id);
+                _logger.LogInformation("Successfully converted {Amount} funds from goal {GoalId} to expense. Transaction ID: {TransactionId}. Remaining amount returned to balance: {RemainingAmount}", 
+                    amount, goalId, transaction.Id, remainingAmount);
                 return goal;
             }
             catch (KeyNotFoundException)

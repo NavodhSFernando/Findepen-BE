@@ -214,44 +214,6 @@ namespace FinDepen_Backend.Controllers
             }
         }
 
-        [HttpPost("{id}/withdraw-funds")]
-        public async Task<IActionResult> WithdrawFundsFromGoal(Guid id, [FromBody] WithdrawFundsFromGoalModel model)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var userId = GetCurrentUserId();
-                if (userId == null)
-                {
-                    return Unauthorized("User not authenticated");
-                }
-
-                var updatedGoal = await _goalService.WithdrawFundsFromGoal(id, model.Amount, userId);
-                return Ok(updatedGoal);
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound($"Goal with ID {id} not found");
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Unauthorized("You can only modify your own goals");
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error withdrawing funds from goal with ID: {GoalId}", id);
-                return StatusCode(500, "An error occurred while withdrawing funds from the goal");
-            }
-        }
-
         [HttpPost("{id}/convert-to-expense")]
         public async Task<IActionResult> ConvertGoalToExpense(Guid id, [FromBody] ConvertGoalToExpenseModel model)
         {
@@ -274,6 +236,7 @@ namespace FinDepen_Backend.Controllers
                     model.TransactionTitle, 
                     model.TransactionDescription, 
                     model.Category, 
+                    model.MarkGoalAsCompleted,
                     userId);
                 
                 return Ok(updatedGoal);
