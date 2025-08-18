@@ -84,6 +84,13 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddHostedService<BudgetAutoRenewalService>();
 builder.Services.AddScoped<IBudgetAutoRenewalService, BudgetAutoRenewalService>();
 
+// Register the background services for daily balance and reserve tracking
+builder.Services.AddHostedService<DailyBalanceTrackingService>();
+builder.Services.AddScoped<IDailyBalanceTrackingService, DailyBalanceTrackingService>();
+
+builder.Services.AddHostedService<DailyReserveTrackingService>();
+builder.Services.AddScoped<IDailyReserveTrackingService, DailyReserveTrackingService>();
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers()

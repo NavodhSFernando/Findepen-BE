@@ -10,6 +10,8 @@ namespace FinDepen_Backend.Data
         public DbSet<Budget> Budgets { get; set; }
         public DbSet<Goal> Goals { get; set; }
         public DbSet<RecurringTransaction> RecurringTransactions { get; set; }
+        public DbSet<DailyBalanceSnapshot> DailyBalanceSnapshots { get; set; }
+        public DbSet<DailyReserveSnapshot> DailyReserveSnapshots { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -47,6 +49,26 @@ namespace FinDepen_Backend.Data
             });
 
             builder.Entity<RecurringTransaction>().ToTable("RecurringTransactions");
+
+            builder.Entity<DailyBalanceSnapshot>(entity =>
+            {
+                entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasIndex(d => new { d.UserId, d.Date }).IsUnique();
+            });
+
+            builder.Entity<DailyReserveSnapshot>(entity =>
+            {
+                entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasIndex(d => new { d.UserId, d.Date }).IsUnique();
+            });
         }
     }
 }
