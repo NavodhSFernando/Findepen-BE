@@ -91,6 +91,9 @@ builder.Services.AddScoped<IDailyBalanceTrackingService, DailyBalanceTrackingSer
 builder.Services.AddHostedService<DailyReserveTrackingService>();
 builder.Services.AddScoped<IDailyReserveTrackingService, DailyReserveTrackingService>();
 
+// Register receipt processing service
+builder.Services.AddScoped<IReceiptProcessingService, ReceiptProcessingService>();
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers()

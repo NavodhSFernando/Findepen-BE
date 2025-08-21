@@ -10,6 +10,7 @@ namespace FinDepen_Backend.Constants
             "Education",
             "Health",
             "Entertainment",
+            "Transportation",	
             "Miscellaneous"
         };
 
