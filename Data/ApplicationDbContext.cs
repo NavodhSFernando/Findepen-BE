@@ -25,6 +25,12 @@ namespace FinDepen_Backend.Data
                 .WithMany(u => u.Transactions)
                 .HasForeignKey(t => t.UserId);
 
+            builder.Entity<Transaction>()
+                .HasOne(t => t.RecurringTransaction)
+                .WithMany(rt => rt.GeneratedTransactions)
+                .HasForeignKey(t => t.RecurringTransactionId)
+                .OnDelete(DeleteBehavior.NoAction);
+
             builder.Entity<Budget>(entity =>
             {
                 entity.HasOne(b => b.User)
@@ -48,7 +54,16 @@ namespace FinDepen_Backend.Data
                     .HasConversion<string>();
             });
 
-            builder.Entity<RecurringTransaction>().ToTable("RecurringTransactions");
+            builder.Entity<RecurringTransaction>(entity =>
+            {
+                entity.ToTable("RecurringTransactions");
+                
+                entity.Property(r => r.Frequency)
+                    .HasConversion<string>();
+                    
+                entity.Property(r => r.Status)
+                    .HasConversion<string>();
+            });
 
             builder.Entity<DailyBalanceSnapshot>(entity =>
             {

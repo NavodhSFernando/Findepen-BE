@@ -74,6 +74,7 @@ builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
+builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
 builder.Services.AddScoped<UserController>();
 builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, PasswordHasher<ApplicationUser>>();
 
@@ -83,6 +84,10 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 // Register the background service for budget auto-renewal
 builder.Services.AddHostedService<BudgetAutoRenewalService>();
 builder.Services.AddScoped<IBudgetAutoRenewalService, BudgetAutoRenewalService>();
+
+// Register the background service for recurring transaction processing
+builder.Services.AddHostedService<RecurringTransactionProcessingService>();
+builder.Services.AddScoped<IRecurringTransactionProcessingService, RecurringTransactionProcessingService>();
 
 // Register the background services for daily balance and reserve tracking
 builder.Services.AddHostedService<DailyBalanceTrackingService>();

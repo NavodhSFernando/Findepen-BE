@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using FinDepen_Backend.DTOs;
 using FinDepen_Backend.Entities;
+using FinDepen_Backend.Constants;
 using Microsoft.AspNetCore.Identity;
 
 public class MappingProfile : Profile
@@ -24,7 +25,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.FormattedAmountWithSign, opt => opt.MapFrom(src => 
                 (src.Type == "Income" ? "+" : "-") + Math.Round(src.Amount, 2).ToString("C")))
             .ForMember(dest => dest.IsIncome, opt => opt.MapFrom(src => src.Type == "Income"))
-            .ForMember(dest => dest.IsExpense, opt => opt.MapFrom(src => src.Type == "Expense"));
+            .ForMember(dest => dest.IsExpense, opt => opt.MapFrom(src => src.Type == "Expense"))
+            .ForMember(dest => dest.IsRecurringGenerated, opt => opt.MapFrom(src => src.IsRecurringGenerated))
+            .ForMember(dest => dest.RecurringTransactionId, opt => opt.MapFrom(src => src.RecurringTransactionId));
 
         // ✅ CreateTransactionModel to Transaction Entity
         CreateMap<CreateTransactionModel, Transaction>()
@@ -127,6 +130,56 @@ public class MappingProfile : Profile
 
         // ✅ Goal Entity to UpdateGoalModel (for potential reverse mapping)
         CreateMap<Goal, UpdateGoalModel>();
+
+        // ✅ RecurringTransaction Entity to RecurringTransactionModel DTO
+        CreateMap<RecurringTransaction, RecurringTransactionModel>()
+            .ForMember(dest => dest.FormattedAmount, opt => opt.MapFrom(src => Math.Round(src.Amount, 2)))
+            .ForMember(dest => dest.FormattedDate, opt => opt.MapFrom(src => src.Date.ToString("MMM dd, yyyy")))
+            .ForMember(dest => dest.BalanceImpact, opt => opt.MapFrom(src => src.Type == "Income" ? "+" : "-"))
+            .ForMember(dest => dest.FormattedAmountWithSign, opt => opt.MapFrom(src => 
+                (src.Type == "Income" ? "+" : "-") + Math.Round(src.Amount, 2).ToString("C")))
+            .ForMember(dest => dest.IsIncome, opt => opt.MapFrom(src => src.Type == "Income"))
+            .ForMember(dest => dest.IsExpense, opt => opt.MapFrom(src => src.Type == "Expense"))
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status == FinDepen_Backend.Constants.RecurringTransactionStatus.Active))
+            .ForMember(dest => dest.CanBeProcessed, opt => opt.MapFrom(src => src.CanBeProcessed))
+            .ForMember(dest => dest.IsExpired, opt => opt.MapFrom(src => src.IsExpired))
+            .ForMember(dest => dest.DaysUntilNextOccurrence, opt => opt.MapFrom(src => src.DaysUntilNextOccurrence))
+            .ForMember(dest => dest.StatusDisplayName, opt => opt.MapFrom(src => src.Status.GetDisplayName()))
+            .ForMember(dest => dest.FrequencyDisplayName, opt => opt.MapFrom(src => src.Frequency.GetDisplayName()))
+            .ForMember(dest => dest.NextOccurrenceFormatted, opt => opt.MapFrom(src => src.NextOccurrenceDate.ToString("MMM dd, yyyy")))
+            .ForMember(dest => dest.StartDateFormatted, opt => opt.MapFrom(src => src.StartDate.ToString("MMM dd, yyyy")))
+            .ForMember(dest => dest.EndDateFormatted, opt => opt.MapFrom(src => src.EndDate.HasValue ? src.EndDate.Value.ToString("MMM dd, yyyy") : null));
+
+        // ✅ CreateRecurringTransactionModel to RecurringTransaction Entity
+        CreateMap<CreateRecurringTransactionModel, RecurringTransaction>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.UserId, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.User, opt => opt.Ignore()) // Don't map navigation property
+            .ForMember(dest => dest.BudgetId, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.Budget, opt => opt.Ignore()) // Don't map navigation property
+            .ForMember(dest => dest.NextOccurrenceDate, opt => opt.MapFrom(src => src.StartDate)) // Initialize to start date
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => FinDepen_Backend.Constants.RecurringTransactionStatus.Active)) // Default to active
+            .ForMember(dest => dest.OccurrenceCount, opt => opt.MapFrom(src => 0)) // Initialize to 0
+            .ForMember(dest => dest.LastCreatedDate, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.GeneratedTransactions, opt => opt.Ignore()); // Don't map navigation property
+
+        // ✅ UpdateRecurringTransactionModel to RecurringTransaction Entity
+        CreateMap<UpdateRecurringTransactionModel, RecurringTransaction>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore()) // Don't map ID
+            .ForMember(dest => dest.UserId, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.User, opt => opt.Ignore()) // Don't map navigation property
+            .ForMember(dest => dest.BudgetId, opt => opt.Ignore()) // Will be set by service
+            .ForMember(dest => dest.Budget, opt => opt.Ignore()) // Don't map navigation property
+            .ForMember(dest => dest.NextOccurrenceDate, opt => opt.Ignore()) // Will be recalculated by service
+            .ForMember(dest => dest.OccurrenceCount, opt => opt.Ignore()) // Don't allow updating
+            .ForMember(dest => dest.LastCreatedDate, opt => opt.Ignore()) // Don't allow updating
+            .ForMember(dest => dest.GeneratedTransactions, opt => opt.Ignore()); // Don't map navigation property
+
+        // ✅ RecurringTransaction Entity to CreateRecurringTransactionModel (for potential reverse mapping)
+        CreateMap<RecurringTransaction, CreateRecurringTransactionModel>();
+
+        // ✅ RecurringTransaction Entity to UpdateRecurringTransactionModel (for potential reverse mapping)
+        CreateMap<RecurringTransaction, UpdateRecurringTransactionModel>();
     }
 }
 

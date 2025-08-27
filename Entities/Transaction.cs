@@ -37,5 +37,12 @@ namespace FinDepen_Backend.Entities
         
         [JsonIgnore]
         public Budget? Budget { get; set; }
+
+        // Recurring transaction tracking
+        public bool IsRecurringGenerated { get; set; } = false;
+        public Guid? RecurringTransactionId { get; set; }
+        
+        [JsonIgnore]
+        public RecurringTransaction? RecurringTransaction { get; set; }
     }
 }

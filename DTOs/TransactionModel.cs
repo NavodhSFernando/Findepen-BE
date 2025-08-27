@@ -36,6 +36,10 @@ namespace FinDepen_Backend.DTOs
 
         public Guid? BudgetId { get; set; }
 
+        // Recurring transaction tracking
+        public bool IsRecurringGenerated { get; set; }
+        public Guid? RecurringTransactionId { get; set; }
+
         // Calculated properties
         [NotMapped]
         public double FormattedAmount => Math.Round(Amount, 2);
