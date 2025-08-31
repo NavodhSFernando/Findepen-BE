@@ -7,7 +7,7 @@ namespace FinDepen_Backend.Entities
     {
         public string Name { get; set; }
         public DateTime DOB { get; set; }
-        public double? BalanceAmount { get; set; } = 0.0;
+        public double? BalanceAmount { get; set; } = -1.0;
         public string? PasswordResetOtp { get; set; }
         public DateTime? PasswordResetOtpExpiry { get; set; }
         public string Theme { get; set; } = "light";

@@ -24,14 +24,17 @@ namespace FinDepen_Backend.Services
         {
             try
             {
-                _logger.LogInformation("Retrieving budgets for user: {UserId}", userId);
+                _logger.LogInformation("Retrieving ongoing budgets for user: {UserId}", userId);
+                
+                var currentDate = DateTime.UtcNow;
                 
                 var budgets = await _context.Budgets
-                .Where(b => b.UserId == userId)
+                    .Where(b => b.UserId == userId)
+                    .Where(b => b.EndDate == null || b.EndDate > currentDate) // Only ongoing budgets
                     .OrderBy(b => b.Category)
-                .ToListAsync();
+                    .ToListAsync();
                 
-                _logger.LogInformation("Successfully retrieved {Count} budgets for user: {UserId}", budgets.Count(), userId);
+                _logger.LogInformation("Successfully retrieved {Count} ongoing budgets for user: {UserId}", budgets.Count(), userId);
                 return budgets;
             }
             catch (Exception ex)

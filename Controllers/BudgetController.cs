@@ -187,6 +187,9 @@ namespace FinDepen_Backend.Controllers
                 var budgets = await _budgetService.GetBudgets(userId);
                 var budgetList = budgets.ToList();
 
+                _logger.LogInformation("Calculating budget summary for user {UserId} based on {Count} ongoing budgets", 
+                    userId, budgetList.Count);
+
                 var summary = new BudgetSummaryModel
                 {
                     TotalBudgets = budgetList.Count,
@@ -199,6 +202,9 @@ namespace FinDepen_Backend.Controllers
                     WarningBudgets = budgetList.Count(b => b.SpentAmount >= b.PlannedAmount * 0.8 && b.SpentAmount < b.PlannedAmount),
                     ExceededBudgets = budgetList.Count(b => b.SpentAmount >= b.PlannedAmount)
                 };
+
+                _logger.LogInformation("Budget summary calculated for user {UserId}: Total={Total}, Planned={Planned}, Spent={Spent}, Progress={Progress}%", 
+                    userId, summary.TotalBudgets, summary.TotalPlannedAmount, summary.TotalSpentAmount, summary.OverallProgressPercentage);
 
                 return Ok(summary);
             }
