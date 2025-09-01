@@ -86,6 +86,7 @@ namespace FinDepen_Backend.Controllers
                     Reminder = createBudgetModel.Reminder,
                     StartDate = createBudgetModel.StartDate,
                     RenewalFrequency = createBudgetModel.RenewalFrequency,
+                    AutoRenewalEnabled = createBudgetModel.AutoRenewalEnabled,
                     UserId = userId
                 };
 
@@ -123,10 +124,10 @@ namespace FinDepen_Backend.Controllers
                 {
                     Category = updateBudgetModel.Category,
                     PlannedAmount = updateBudgetModel.PlannedAmount,
-                    SpentAmount = updateBudgetModel.SpentAmount,
                     Reminder = updateBudgetModel.Reminder,
                     StartDate = updateBudgetModel.StartDate,
                     RenewalFrequency = updateBudgetModel.RenewalFrequency,
+                    AutoRenewalEnabled = updateBudgetModel.AutoRenewalEnabled,
                     UserId = userId
                 };
 
@@ -212,6 +213,27 @@ namespace FinDepen_Backend.Controllers
             {
                 _logger.LogError(ex, "Error retrieving budget summary for user");
                 return StatusCode(500, "An error occurred while retrieving budget summary");
+            }
+        }
+
+        [HttpGet("categories-with-active-budgets")]
+        public async Task<IActionResult> GetCategoriesWithActiveBudgets()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == null)
+                {
+                    return Unauthorized("User not authenticated");
+                }
+
+                var categories = await _budgetService.GetCategoriesWithActiveBudgets(userId);
+                return Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving categories with active budgets for user");
+                return StatusCode(500, "An error occurred while retrieving categories with active budgets");
             }
         }
 

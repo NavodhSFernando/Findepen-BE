@@ -9,5 +9,6 @@ namespace FinDepen_Backend.Repositories
         Task<Budget> CreateBudget(Budget budget);
         Task<Budget> UpdateBudget(Guid id, Budget budget);
         Task<Budget> DeleteBudget(Guid id);
+        Task<IEnumerable<string>> GetCategoriesWithActiveBudgets(string userId);
     }
 }

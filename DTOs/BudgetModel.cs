@@ -96,6 +96,8 @@ namespace FinDepen_Backend.DTOs
         [Required(ErrorMessage = "Renewal frequency is required")]
         [ValidRenewalFrequency]
         public RenewalFrequency RenewalFrequency { get; set; } = RenewalFrequency.Monthly;
+
+        public bool AutoRenewalEnabled { get; set; } = false;
     }
 
     public class UpdateBudgetModel
@@ -108,9 +110,6 @@ namespace FinDepen_Backend.DTOs
         [Range(0.01, double.MaxValue, ErrorMessage = "Planned amount must be greater than 0")]
         public double PlannedAmount { get; set; }
 
-        [Range(0, double.MaxValue, ErrorMessage = "Spent amount cannot be negative")]
-        public double SpentAmount { get; set; }
-
         public bool Reminder { get; set; }
 
         [Required(ErrorMessage = "Start date is required")]
@@ -119,6 +118,8 @@ namespace FinDepen_Backend.DTOs
         [Required(ErrorMessage = "Renewal frequency is required")]
         [ValidRenewalFrequency]
         public RenewalFrequency RenewalFrequency { get; set; }
+
+        public bool AutoRenewalEnabled { get; set; }
     }
 
     public class BudgetSummaryModel
