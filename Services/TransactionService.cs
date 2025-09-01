@@ -101,15 +101,17 @@ namespace FinDepen_Backend.Services
                 // Validate balance for expense transactions
                 if (createModel.Type == "Expense")
                 {
-                    if (user.BalanceAmount < createModel.Amount)
+                    double currentBalance = user.BalanceAmount ?? 0;
+                    if (currentBalance < createModel.Amount)
                     {
-                        throw new InvalidOperationException($"Insufficient balance. Current balance: {user.BalanceAmount:C}, Transaction amount: {createModel.Amount:C}");
+                        throw new InvalidOperationException($"Insufficient balance. Current balance: {currentBalance:C}, Transaction amount: {createModel.Amount:C}");
                     }
-                    user.BalanceAmount -= createModel.Amount;
+                    user.BalanceAmount = currentBalance - createModel.Amount;
                 }
                 else if (createModel.Type == "Income")
                 {
-                    user.BalanceAmount += createModel.Amount;
+                    double currentBalance = user.BalanceAmount ?? 0;
+                    user.BalanceAmount = currentBalance + createModel.Amount;
                 }
 
                 // Update budget spent amount if this is an expense and there's a matching budget
@@ -195,10 +197,11 @@ namespace FinDepen_Backend.Services
                 }
 
                 // Validate that the new balance won't go below 0
-                double newBalance = user.BalanceAmount + balanceAdjustment;
+                double currentBalance = user.BalanceAmount ?? 0;
+                double newBalance = currentBalance + balanceAdjustment;
                 if (newBalance < 0)
                 {
-                    throw new InvalidOperationException($"Insufficient balance. Current balance: {user.BalanceAmount:C}, Transaction would result in: {newBalance:C}");
+                    throw new InvalidOperationException($"Insufficient balance. Current balance: {currentBalance:C}, Transaction would result in: {newBalance:C}");
                 }
 
                 // Update user balance
@@ -251,13 +254,14 @@ namespace FinDepen_Backend.Services
                 }
 
                 // Update user balance
+                double currentBalance = user.BalanceAmount ?? 0;
                 if (transactionToDelete.Type == "Income")
                 {
-                    user.BalanceAmount -= transactionToDelete.Amount;
+                    user.BalanceAmount = currentBalance - transactionToDelete.Amount;
                 }
                 else if (transactionToDelete.Type == "Expense")
                 {
-                    user.BalanceAmount += transactionToDelete.Amount;
+                    user.BalanceAmount = currentBalance + transactionToDelete.Amount;
                 }
 
                 // Update budget spent amount if this transaction affected a budget
