@@ -30,7 +30,7 @@ namespace FinDepen_Backend.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
-                    b.Property<double>("BalanceAmount")
+                    b.Property<double?>("BalanceAmount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("float")
                         .HasDefaultValue(0.0);
@@ -85,6 +85,10 @@ namespace FinDepen_Backend.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
 
@@ -111,9 +115,18 @@ namespace FinDepen_Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("AutoRenewalEnabled")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastRenewalDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<double>("PlannedAmount")
                         .HasColumnType("float");
@@ -121,8 +134,18 @@ namespace FinDepen_Backend.Migrations
                     b.Property<bool>("Reminder")
                         .HasColumnType("bit");
 
+                    b.Property<int>("RenewalCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RenewalFrequency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<double>("SpentAmount")
                         .HasColumnType("float");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -132,7 +155,61 @@ namespace FinDepen_Backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Budgets", (string)null);
+                    b.ToTable("Budgets");
+                });
+
+            modelBuilder.Entity("FinDepen_Backend.Entities.DailyBalanceSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BalanceAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("DailyBalanceSnapshots");
+                });
+
+            modelBuilder.Entity("FinDepen_Backend.Entities.DailyReserveSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ReserveAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("DailyReserveSnapshots");
                 });
 
             modelBuilder.Entity("FinDepen_Backend.Entities.Goal", b =>
@@ -141,11 +218,31 @@ namespace FinDepen_Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<double>("CurrentAmount")
                         .HasColumnType("float");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastUpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("Reminder")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<double>("TargetAmount")
                         .HasColumnType("float");
@@ -165,7 +262,7 @@ namespace FinDepen_Backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Goals", (string)null);
+                    b.ToTable("Goals");
                 });
 
             modelBuilder.Entity("FinDepen_Backend.Entities.Transaction", b =>
@@ -177,6 +274,9 @@ namespace FinDepen_Backend.Migrations
                     b.Property<double>("Amount")
                         .HasColumnType("float");
 
+                    b.Property<Guid?>("BudgetId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -186,6 +286,12 @@ namespace FinDepen_Backend.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsRecurringGenerated")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("RecurringTransactionId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -201,9 +307,13 @@ namespace FinDepen_Backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BudgetId");
+
+                    b.HasIndex("RecurringTransactionId");
+
                     b.HasIndex("UserId");
 
-                    b.ToTable("Transactions", (string)null);
+                    b.ToTable("Transactions");
 
                     b.UseTptMappingStrategy();
                 });
@@ -345,12 +455,34 @@ namespace FinDepen_Backend.Migrations
                 {
                     b.HasBaseType("FinDepen_Backend.Entities.Transaction");
 
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Frequency")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("LastCreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NextOccurrenceDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OccurrenceCount")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.ToTable("RecurringTransactions", (string)null);
                 });
@@ -359,6 +491,28 @@ namespace FinDepen_Backend.Migrations
                 {
                     b.HasOne("FinDepen_Backend.Entities.ApplicationUser", "User")
                         .WithMany("Budgets")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FinDepen_Backend.Entities.DailyBalanceSnapshot", b =>
+                {
+                    b.HasOne("FinDepen_Backend.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FinDepen_Backend.Entities.DailyReserveSnapshot", b =>
+                {
+                    b.HasOne("FinDepen_Backend.Entities.ApplicationUser", "User")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -379,11 +533,24 @@ namespace FinDepen_Backend.Migrations
 
             modelBuilder.Entity("FinDepen_Backend.Entities.Transaction", b =>
                 {
+                    b.HasOne("FinDepen_Backend.Entities.Budget", "Budget")
+                        .WithMany("Transactions")
+                        .HasForeignKey("BudgetId");
+
+                    b.HasOne("FinDepen_Backend.Entities.RecurringTransaction", "RecurringTransaction")
+                        .WithMany("GeneratedTransactions")
+                        .HasForeignKey("RecurringTransactionId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("FinDepen_Backend.Entities.ApplicationUser", "User")
                         .WithMany("Transactions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Budget");
+
+                    b.Navigation("RecurringTransaction");
 
                     b.Navigation("User");
                 });
@@ -455,6 +622,16 @@ namespace FinDepen_Backend.Migrations
                     b.Navigation("Goals");
 
                     b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("FinDepen_Backend.Entities.Budget", b =>
+                {
+                    b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("FinDepen_Backend.Entities.RecurringTransaction", b =>
+                {
+                    b.Navigation("GeneratedTransactions");
                 });
 #pragma warning restore 612, 618
         }

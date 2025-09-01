@@ -23,14 +23,21 @@ namespace FinDepen_Backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTransactions()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
+            try
             {
-                return Unauthorized();
-            }
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                {
+                    return Unauthorized(new { Message = "User ID not found in claims" });
+                }
 
-            var transactions = await _transactionService.GetTransactions(userId);
-            return Ok(transactions);
+                var transactions = await _transactionService.GetTransactions(userId);
+                return Ok(transactions);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving transactions", Error = ex.Message });
+            }
         }
 
         [HttpGet("{id}")]
@@ -43,64 +50,113 @@ namespace FinDepen_Backend.Controllers
             }
             catch (KeyNotFoundException)
             {
-                return NotFound();
+                return NotFound(new { Message = "Transaction not found" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving the transaction", Error = ex.Message });
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateTransaction(TransactionModel transactionModel)
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
-            var transaction = new Transaction
-            {
-                Title = transactionModel.Title,
-                Amount = transactionModel.Amount,
-                Category = transactionModel.Category,
-                Date = transactionModel.Date,
-                Description = transactionModel.Description,
-                Type = transactionModel.Type,
-                UserId = userId
-            };
-
-            var createdTransaction = await _transactionService.CreateTransaction(transaction);
-            return Ok(createdTransaction);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTransaction(Guid id, TransactionModel transactionModel)
+        public async Task<IActionResult> CreateTransaction([FromBody] CreateTransactionModel createModel)
         {
             try
             {
-                var updatedTransaction = await _transactionService.UpdateTransaction(id, transactionModel);
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new { Message = "Invalid model state", Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+                }
+
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                {
+                    return Unauthorized(new { Message = "User ID not found in claims" });
+                }
+
+                var createdTransaction = await _transactionService.CreateTransaction(createModel, userId);
+                return CreatedAtAction(nameof(GetTransactionById), new { id = createdTransaction.Id }, createdTransaction);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while creating the transaction", Error = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateTransaction(Guid id, [FromBody] UpdateTransactionModel updateModel)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new { Message = "Invalid model state", Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+                }
+
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                {
+                    return Unauthorized(new { Message = "User ID not found in claims" });
+                }
+
+                var updatedTransaction = await _transactionService.UpdateTransaction(id, updateModel, userId);
                 return Ok(updatedTransaction);
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound();
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while updating the transaction", Error = ex.Message });
             }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTransaction(Guid id)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
             try
             {
-                var deletedTransaction = await _transactionService.DeleteTransaction(id);
-                return Ok(deletedTransaction);
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                {
+                    return Unauthorized(new { Message = "User ID not found in claims" });
+                }
+
+                var deletedTransaction = await _transactionService.DeleteTransaction(id, userId);
+                return Ok(new { Message = "Transaction deleted successfully", Transaction = deletedTransaction });
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound();
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while deleting the transaction", Error = ex.Message });
+            }
+        }
+
+        [HttpGet("summary")]
+        public async Task<IActionResult> GetTransactionSummary()
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                {
+                    return Unauthorized(new { Message = "User ID not found in claims" });
+                }
+
+                var summary = await _transactionService.GetTransactionSummary(userId);
+                return Ok(summary);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while getting transaction summary", Error = ex.Message });
             }
         }
     }

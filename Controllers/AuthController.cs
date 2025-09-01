@@ -31,50 +31,86 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterModel model)
     {
-        var user = _mapper.Map<ApplicationUser>(model);
+        try
+        {
+            // Check if user already exists
+            var existingUser = await _userManager.FindByEmailAsync(model.Email);
+            if (existingUser != null)
+            {
+                return BadRequest(new { message = "User with this email already exists" });
+            }
 
-        var result = await _userManager.CreateAsync(user, model.Password);
+            var user = _mapper.Map<ApplicationUser>(model);
 
-        if (!result.Succeeded)
-            return BadRequest(result.Errors);
+            var result = await _userManager.CreateAsync(user, model.Password);
 
-        return Ok(new { message = "User registered successfully" });
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description).ToList();
+                return BadRequest(new { message = "Registration failed", errors });
+            }
+
+            return Ok(new { message = "User registered successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred during registration", error = ex.Message });
+        }
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginModel model)
     {
-        var user = await _userManager.FindByEmailAsync(model.Email);
-        if (user == null) return Unauthorized("Invalid email or password");
+        try
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null) 
+                return Unauthorized(new { message = "Invalid email or password" });
 
-        var result = await _signInManager.PasswordSignInAsync(user, model.Password, false, false);
-        if (!result.Succeeded) return Unauthorized("Invalid email or password");
+            var result = await _signInManager.PasswordSignInAsync(user, model.Password, false, false);
+            if (!result.Succeeded) 
+                return Unauthorized(new { message = "Invalid email or password" });
 
-        var token = _jwtService.GenerateToken(user);
-        return Ok(new { Token = token });
+            var token = _jwtService.GenerateToken(user);
+            return Ok(new { 
+                Token = token,
+                User = new { 
+                    Id = user.Id, 
+                    Name = user.Name, 
+                    Email = user.Email 
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred during login", error = ex.Message });
+        }
     }
 
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel model)
     {
-        if (string.IsNullOrWhiteSpace(model.Email))
+        try
         {
-            return BadRequest("Email cannot be empty.");
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null) 
+                return BadRequest(new { message = "If a user with this email exists, a password reset OTP has been sent" });
+
+            var token = GenerateOtpToken();
+
+            user.PasswordResetOtp = token;
+            user.PasswordResetOtpExpiry = DateTime.UtcNow.AddMinutes(10); // Extended to 10 minutes
+            await _userManager.UpdateAsync(user);
+
+            // Send OTP to user's email
+            await _emailService.SendPasswordResetOtpAsync(model.Email, token);
+
+            return Ok(new { message = "If a user with this email exists, a password reset OTP has been sent" });
         }
-
-        var user = await _userManager.FindByEmailAsync(model.Email);
-        if (user == null) return BadRequest("User not found");
-
-        var token = GenerateOtpToken();
-
-        user.PasswordResetOtp = token;
-        user.PasswordResetOtpExpiry = DateTime.UtcNow.AddMinutes(1);
-        await _userManager.UpdateAsync(user);
-
-        // Send OTP to user's email
-        await _emailService.SendPasswordResetOtpAsync(model.Email, token);
-
-        return Ok(new { message = "Password reset link sent to your email" });
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while processing your request", error = ex.Message });
+        }
     }
 
     private string GenerateOtpToken()
@@ -86,28 +122,58 @@ public class AuthController : ControllerBase
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpModel model)
     {
-        var user = await _userManager.FindByEmailAsync(model.Email);
-        if (user == null) return BadRequest("User not found");
+        try
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null) 
+                return BadRequest(new { message = "Invalid email or OTP" });
 
-        if (user.PasswordResetOtp != model.Otp) return BadRequest("Invalid OTP");
-        if (user.PasswordResetOtpExpiry < DateTime.UtcNow) return BadRequest("OTP expired");
+            if (user.PasswordResetOtp != model.Otp) 
+                return BadRequest(new { message = "Invalid OTP" });
+            
+            if (user.PasswordResetOtpExpiry < DateTime.UtcNow) 
+                return BadRequest(new { message = "OTP has expired. Please request a new one" });
 
-        return Ok(new { message = "Otp verified succesfully" });
+            return Ok(new { message = "OTP verified successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while verifying OTP", error = ex.Message });
+        }
     }
 
     [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword(ResetPasswordModel resetPasswordModel)
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel resetPasswordModel)
     {
-        var user = await _userManager.FindByEmailAsync(resetPasswordModel.Email);
-        if (user == null) return BadRequest("User not found");
+        try
+        {
+            var user = await _userManager.FindByEmailAsync(resetPasswordModel.Email);
+            if (user == null) 
+                return BadRequest(new { message = "Invalid email or OTP" });
 
-        user.PasswordHash = _passwordHasher.HashPassword(user, resetPasswordModel.NewPassword);
+            if (user.PasswordResetOtp != resetPasswordModel.Otp) 
+                return BadRequest(new { message = "Invalid OTP" });
+            
+            if (user.PasswordResetOtpExpiry < DateTime.UtcNow) 
+                return BadRequest(new { message = "OTP has expired. Please request a new one" });
 
-        user.PasswordResetOtp = null;
-        user.PasswordResetOtpExpiry = null;
-        await _userManager.UpdateAsync(user);
+            user.PasswordHash = _passwordHasher.HashPassword(user, resetPasswordModel.NewPassword);
+            user.PasswordResetOtp = null;
+            user.PasswordResetOtpExpiry = null;
+            
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description).ToList();
+                return BadRequest(new { message = "Password reset failed", errors });
+            }
 
-        return Ok(new { message = "Password reset successfully" });
+            return Ok(new { message = "Password reset successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while resetting password", error = ex.Message });
+        }
     }
 }
 

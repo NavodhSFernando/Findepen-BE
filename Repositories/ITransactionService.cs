@@ -5,10 +5,11 @@ namespace FinDepen_Backend.Repositories
 {
     public interface ITransactionService
     {
-        Task<IEnumerable<Transaction>> GetTransactions(string userId);
-        Task<Transaction> GetTransactionById(Guid id);
-        Task<Transaction> CreateTransaction(Transaction transaction);
-        Task<Transaction> UpdateTransaction(Guid id, TransactionModel transaction);
-        Task<Transaction> DeleteTransaction(Guid id);
+        Task<IEnumerable<TransactionModel>> GetTransactions(string userId);
+        Task<TransactionModel> GetTransactionById(Guid id);
+        Task<TransactionModel> CreateTransaction(CreateTransactionModel createModel, string userId);
+        Task<TransactionModel> UpdateTransaction(Guid id, UpdateTransactionModel updateModel, string userId);
+        Task<TransactionModel> DeleteTransaction(Guid id, string userId);
+        Task<TransactionSummaryModel> GetTransactionSummary(string userId);
     }
 }
