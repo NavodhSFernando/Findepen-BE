@@ -44,6 +44,31 @@ namespace FinDepen_Backend.Services
             }
         }
 
+        public async Task<IEnumerable<string>> GetCategoriesWithActiveBudgets(string userId)
+        {
+            try
+            {
+                _logger.LogInformation("Retrieving categories with active budgets for user: {UserId}", userId);
+                
+                var currentDate = DateTime.UtcNow;
+                
+                var categories = await _context.Budgets
+                    .Where(b => b.UserId == userId)
+                    .Where(b => b.EndDate == null || b.EndDate > currentDate) // Only ongoing budgets
+                    .Select(b => b.Category)
+                    .Distinct()
+                    .ToListAsync();
+                
+                _logger.LogInformation("Successfully retrieved {Count} categories with active budgets for user: {UserId}", categories.Count(), userId);
+                return categories;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving categories with active budgets for user: {UserId}", userId);
+                throw new Exception("An error occurred while retrieving categories with active budgets.", ex);
+            }
+        }
+
         public async Task<Budget> GetBudgetById(Guid id)
         {
             try
@@ -81,6 +106,9 @@ namespace FinDepen_Backend.Services
                 
                 ValidateBudgetData(budget);
                 
+                // Check for overlapping budgets in the same category
+                await ValidateNoOverlappingBudgets(budget);
+                
                 budget.Id = Guid.NewGuid();
                 budget.SpentAmount = 0; // Initialize spent amount to 0 for new budgets
                 
@@ -116,6 +144,9 @@ namespace FinDepen_Backend.Services
                 
                 var existingBudget = await GetBudgetById(id);
                 ValidateBudgetData(updatedBudget);
+                
+                // Check for overlapping budgets in the same category (excluding the current budget being updated)
+                await ValidateNoOverlappingBudgets(updatedBudget, id);
                 
                 UpdateBudgetProperties(existingBudget, updatedBudget);
                 
@@ -189,19 +220,25 @@ namespace FinDepen_Backend.Services
 
         private void UpdateBudgetProperties(Budget existingBudget, Budget updatedBudget)
         {
-            existingBudget.Category = updatedBudget.Category;
+            // Don't update Category - it cannot be changed after creation to prevent conflicts
+            // existingBudget.Category = updatedBudget.Category;
+            
             existingBudget.PlannedAmount = updatedBudget.PlannedAmount;
-            existingBudget.SpentAmount = updatedBudget.SpentAmount;
+            // Don't update SpentAmount - it should be calculated from transactions
+            // existingBudget.SpentAmount = updatedBudget.SpentAmount;
+            
             existingBudget.Reminder = updatedBudget.Reminder;
-            existingBudget.StartDate = updatedBudget.StartDate;
+            
+            // Don't update StartDate - it cannot be changed after creation to maintain transaction associations
+            // existingBudget.StartDate = updatedBudget.StartDate;
+            
             existingBudget.RenewalFrequency = updatedBudget.RenewalFrequency;
             existingBudget.AutoRenewalEnabled = updatedBudget.AutoRenewalEnabled;
             
-            // Recalculate EndDate if StartDate or RenewalFrequency changed
-            if (existingBudget.StartDate != updatedBudget.StartDate || 
-                existingBudget.RenewalFrequency != updatedBudget.RenewalFrequency)
+            // Recalculate EndDate if RenewalFrequency changed (StartDate is now fixed)
+            if (existingBudget.RenewalFrequency != updatedBudget.RenewalFrequency)
             {
-                existingBudget.EndDate = CalculateEndDate(updatedBudget.StartDate, updatedBudget.RenewalFrequency);
+                existingBudget.EndDate = CalculateEndDate(existingBudget.StartDate, updatedBudget.RenewalFrequency);
             }
         }
 
@@ -214,6 +251,32 @@ namespace FinDepen_Backend.Services
                 Constants.RenewalFrequency.Yearly => startDate.AddYears(1),
                 _ => startDate.AddMonths(1) // Default to monthly
             };
+        }
+
+        private async Task ValidateNoOverlappingBudgets(Budget budget, Guid? excludeBudgetId = null)
+        {
+            var budgetEndDate = CalculateEndDate(budget.StartDate, budget.RenewalFrequency);
+            
+            var overlappingBudgets = await _context.Budgets
+                .Where(b => b.UserId == budget.UserId && 
+                           b.Category == budget.Category &&
+                           b.Id != excludeBudgetId &&
+                           (b.EndDate == null || b.EndDate > budget.StartDate) &&
+                           budgetEndDate > b.StartDate)
+                .ToListAsync();
+
+            if (overlappingBudgets.Any())
+            {
+                var existingBudget = overlappingBudgets.First();
+                var existingEndDate = existingBudget.EndDate?.ToString("MMM dd, yyyy") ?? "Ongoing";
+                var newEndDate = budgetEndDate.ToString("MMM dd, yyyy");
+                
+                throw new ArgumentException(
+                    $"A budget for category '{budget.Category}' already exists with overlapping timeline. " +
+                    $"Existing budget: {existingBudget.StartDate:MMM dd, yyyy} - {existingEndDate}. " +
+                    $"New budget: {budget.StartDate:MMM dd, yyyy} - {newEndDate}. " +
+                    "Please choose a different category or adjust the timeline.");
+            }
         }
     }
 }
