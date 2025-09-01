@@ -141,6 +141,11 @@ namespace FinDepen_Backend.Services
                     }
                     else
                     {
+                        // Validate balance for expense transactions
+                        if (user.BalanceAmount < recurringTransaction.Amount)
+                        {
+                            throw new InvalidOperationException($"Insufficient balance for recurring transaction. Current balance: {user.BalanceAmount:C}, Transaction amount: {recurringTransaction.Amount:C}");
+                        }
                         user.BalanceAmount -= recurringTransaction.Amount;
                     }
                 }

@@ -98,14 +98,18 @@ namespace FinDepen_Backend.Services
                     user.BalanceAmount = 0;
                 }
 
-                // Update balance based on transaction type
-                if (createModel.Type == "Income")
+                // Validate balance for expense transactions
+                if (createModel.Type == "Expense")
+                {
+                    if (user.BalanceAmount < createModel.Amount)
+                    {
+                        throw new InvalidOperationException($"Insufficient balance. Current balance: {user.BalanceAmount:C}, Transaction amount: {createModel.Amount:C}");
+                    }
+                    user.BalanceAmount -= createModel.Amount;
+                }
+                else if (createModel.Type == "Income")
                 {
                     user.BalanceAmount += createModel.Amount;
-                }
-                else if (createModel.Type == "Expense")
-                {
-                    user.BalanceAmount -= createModel.Amount;
                 }
 
                 // Update budget spent amount if this is an expense and there's a matching budget
@@ -190,8 +194,15 @@ namespace FinDepen_Backend.Services
                     balanceAdjustment -= updateModel.Amount;
                 }
 
+                // Validate that the new balance won't go below 0
+                double newBalance = user.BalanceAmount + balanceAdjustment;
+                if (newBalance < 0)
+                {
+                    throw new InvalidOperationException($"Insufficient balance. Current balance: {user.BalanceAmount:C}, Transaction would result in: {newBalance:C}");
+                }
+
                 // Update user balance
-                user.BalanceAmount += balanceAdjustment;
+                user.BalanceAmount = newBalance;
 
                 // Update budget spent amounts
                 await UpdateBudgetSpentAmount(transactionToUpdate, updateModel, userId);
